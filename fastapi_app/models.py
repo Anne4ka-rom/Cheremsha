@@ -11,7 +11,7 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     info: dict
-    loan_status: int
+    loan_status: int | float
 
 class DatasetResponse(BaseModel):
     dataset: bytes

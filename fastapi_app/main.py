@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, status, File, UploadFile
+from fastapi import FastAPI, HTTPException, status, UploadFile
 from fastapi.responses import Response
-from models import RequestStatus, PredictRequest, PredictResponse, DatasetResponse
-import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+from models import RequestStatus, PredictRequest, PredictResponse
 from ml_utils import ModelController
 
 
@@ -28,7 +28,7 @@ async def upload_model(file: UploadFile) -> RequestStatus:
 
 @app.post('/predict')
 async def predict(data: PredictRequest) -> PredictResponse:
-    if not model:
+    if not model.model:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     try:
@@ -39,7 +39,7 @@ async def predict(data: PredictRequest) -> PredictResponse:
 
 @app.post('/predict-from-csv')
 async def predict_from_csv(file: UploadFile) -> Response:
-    if not model:
+    if not model.model:
         raise HTTPException(status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     if not file.filename.endswith('.csv'):
@@ -58,4 +58,4 @@ async def predict_from_csv(file: UploadFile) -> Response:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
 
-uvicorn.run(app, log_config="log.ini")
+# uvicorn.run(app, log_config="log.ini")
