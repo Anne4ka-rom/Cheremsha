@@ -1,0 +1,55 @@
+{
+  "selected_features": [
+    "person_age",
+    "person_income",
+    "person_emp_exp",
+    "loan_amnt",
+    "loan_int_rate",
+    "loan_percent_income",
+    "cb_person_cred_hist_length",
+    "person_home_ownership_OWN",
+    "person_home_ownership_RENT",
+    "loan_intent_EDUCATION",
+    "loan_intent_HOMEIMPROVEMENT",
+    "loan_intent_MEDICAL",
+    "loan_intent_PERSONAL",
+    "loan_intent_VENTURE",
+    "previous_loan_defaults_on_file_Yes"
+  ],
+  "all_original_features": [
+    "person_age",
+    "person_gender",
+    "person_education",
+    "person_income",
+    "person_emp_exp",
+    "person_home_ownership",
+    "loan_amnt",
+    "loan_intent",
+    "loan_int_rate",
+    "loan_percent_income",
+    "cb_person_cred_hist_length",
+    "credit_score",
+    "previous_loan_defaults_on_file"
+  ],
+  "numeric_features": [
+    "person_age",
+    "person_income",
+    "person_emp_exp",
+    "loan_amnt",
+    "loan_int_rate",
+    "loan_percent_income",
+    "cb_person_cred_hist_length",
+    "credit_score"
+  ],
+  "categorical_features": [
+    "person_gender",
+    "person_education",
+    "person_home_ownership",
+    "loan_intent",
+    "previous_loan_defaults_on_file"
+  ],
+  "best_model": "XGBoost",
+  "roc_auc_score": 0.9772701171996013,
+  "n_selected_features": 15,
+  "model_parameters": "{'objective': 'binary:logistic', 'base_score': None, 'booster': None, 'callbacks': None, 'colsample_bylevel': None, 'colsample_bynode': None, 'colsample_bytree': None, 'device': None, 'early_stopping_rounds': None, 'enable_categorical': False, 'eval_metric': 'logloss', 'feature_types': None, 'feature_weights': None, 'gamma': None, 'grow_policy': None, 'importance_type': None, 'interaction_constraints': None, 'learning_rate': 0.1, 'max_bin': None, 'max_cat_threshold': None, 'max_cat_to_onehot': None, 'max_delta_step': None, 'max_depth': 6, 'max_leaves': None, 'min_child_weight': None, 'missing': nan, 'monotone_constraints': None, 'multi_strategy': None, 'n_estimators': 150, 'n_jobs': None, 'num_parallel_tree': None, 'random_state': 42, 'reg_alpha': None, 'reg_lambda': None, 'sampling_method': None, 'scale_pos_weight': None, 'subsample': None, 'tree_method': None, 'validate_parameters': None, 'verbosity': None}"
+}
