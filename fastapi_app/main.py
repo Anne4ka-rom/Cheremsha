@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, UploadFile
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from models import RequestStatus, PredictRequest, PredictResponse
 from ml_utils import ModelController
@@ -21,6 +21,10 @@ app.add_middleware(
 async def health() -> RequestStatus:
     return RequestStatus(status=200, message='working')
 
+@app.get('/upload-model')
+async def page_upload_model() -> FileResponse:
+    return FileResponse('templates/upload-model.html')
+
 @app.post('/upload-model')
 async def upload_model(file: UploadFile) -> RequestStatus:
     if not file.filename.endswith('.pkl'):
@@ -34,6 +38,10 @@ async def upload_model(file: UploadFile) -> RequestStatus:
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
 
+@app.get('/predict')
+async def page_predict() -> FileResponse:
+    return FileResponse('templates/predict.html')
+
 @app.post('/predict')
 async def predict(data: PredictRequest) -> PredictResponse:
     if not model.model:
@@ -44,6 +52,10 @@ async def predict(data: PredictRequest) -> PredictResponse:
         return PredictResponse(info=redacted_dataset, loan_status=loan_status)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=e)
+
+@app.get('/predict-from-csv')
+async def page_predict_from_csv() -> FileResponse:
+    return FileResponse('templates/predict-from-csv.html')
 
 @app.post('/predict-from-csv')
 async def predict_from_csv(file: UploadFile) -> Response:

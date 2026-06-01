@@ -211,9 +211,9 @@
     <h1 class="title">Предсказание одобрения ипотеки</h1>
 
     <div class="nav">
-        <a href="index.html" class="nav-link active">📝 Одиночное предсказание</a>
-        <a href="predict-csv.html" class="nav-link">📁 CSV предсказание</a>
-        <a href="upload-model.html" class="nav-link">⚙️ Загрузка модели</a>
+        <a href="predict" class="nav-link active">📝 Одиночное предсказание</a>
+        <a href="predict-from-csv" class="nav-link">📁 CSV предсказание</a>
+        <a href="upload-model" class="nav-link">⚙️ Загрузка модели</a>
     </div>
 
     <form id="mortgageForm" class="form-grid" novalidate>
@@ -227,8 +227,8 @@
             <label class="field-label" for="person_gender">Пол</label>
             <select id="person_gender" name="person_gender" class="field-select" required>
                 <option value="" disabled selected>Выберите вариант</option>
-                <option value="Male">Мужчина</option>
-                <option value="Female">Женщина</option>
+                <option value="male">Мужчина</option>
+                <option value="female">Женщина</option>
             </select>
             <div class="field-error" id="person_gender_error"></div>
         </div>

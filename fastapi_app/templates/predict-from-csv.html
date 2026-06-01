@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Загрузка модели</title>
+    <title>Предсказание по CSV</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -57,7 +57,18 @@
             color: var(--text-muted);
             letter-spacing: 0.3px;
         }
-
+        .field-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .field-hint code {
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-family: monospace;
+            color: var(--accent);
+        }
         .custom-file-wrapper {
             position: relative;
             width: 100%;
@@ -75,7 +86,6 @@
         .custom-file-wrapper.error {
             border-color: var(--error);
         }
-
         .real-file-input {
             position: absolute;
             width: 100%;
@@ -84,7 +94,6 @@
             cursor: pointer;
             z-index: 2;
         }
-
         .select-file-btn {
             background: transparent;
             border: none;
@@ -108,7 +117,6 @@
         .file-name-display.show {
             display: block;
         }
-
         .clear-file-btn {
             background: transparent;
             border: none;
@@ -127,7 +135,6 @@
         .clear-file-btn.show {
             display: block;
         }
-
         .field-error {
             color: var(--error);
             font-size: 0.8rem;
@@ -137,7 +144,6 @@
         .field-error.show {
             display: block;
         }
-
         .predict-btn {
             width: 100%;
             background-color: var(--accent);
@@ -180,10 +186,68 @@
             text-align: center;
         }
         .success-notification.show { display: block; }
+        .result-block {
+            margin-top: 28px;
+            border-top: 1px solid var(--border);
+            padding-top: 22px;
+        }
+        .result-card {
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            padding: 18px 16px;
+        }
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .metric-item {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 16px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .download-btn {
+            width: 100%;
+            background-color: var(--success);
+            border: none;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
+            color: white;
+            cursor: pointer;
+            border-radius: 0px;
+            letter-spacing: 0.3px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .download-btn:hover { background-color: #74b038; }
+        .download-btn:active { background-color: #74b038; }
+        .download-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .hidden { display: none; }
         @media (max-width: 500px) {
             .predictor-card { padding: 20px 16px 26px; }
             .title { font-size: 1.4rem; }
+            .metric-grid { grid-template-columns: 1fr; }
         }
         .nav {
             display: flex;
@@ -216,54 +280,85 @@
 </head>
 <body>
 <div class="predictor-card">
-    <h1 class="title">Загрузка модели</h1>
+    <h1 class="title">Предсказание по CSV файлу</h1>
 
     <div class="nav">
-        <a href="index.html" class="nav-link">📝 Одиночное предсказание</a>
-        <a href="predict-csv.html" class="nav-link">📁 CSV предсказание</a>
-        <a href="upload-model.html" class="nav-link active">⚙️ Загрузка модели</a>
+        <a href="predict" class="nav-link">📝 Одиночное предсказание</a>
+        <a href="predict-from-csv" class="nav-link active">📁 CSV предсказание</a>
+        <a href="upload-model" class="nav-link">⚙️ Загрузка модели</a>
     </div>
 
-    <form id="uploadForm" class="form-grid">
+    <form id="csvForm" class="form-grid">
         <div class="field-group">
-            <label class="field-label" for="modelFile">Файл модели (.pkl)</label>
+            <label class="field-label" for="csvFile">Загрузите CSV файл</label>
 
             <div class="custom-file-wrapper" id="fileWrapper">
-                <input type="file" id="modelFile" class="real-file-input" accept=".pkl" required>
-
+                <input type="file" id="csvFile" class="real-file-input" accept=".csv" required>
                 <span class="select-file-btn" id="selectBtn">Выбрать файл</span>
-
                 <span class="file-name-display" id="fileNameDisplay"></span>
-
                 <button type="button" class="clear-file-btn" id="clearBtn" title="Очистить">×</button>
             </div>
 
-            <div class="field-error" id="modelFile_error"></div>
+            <div class="field-hint">
+                Файл должен содержать колонки:
+                <code>person_age</code>, <code>person_gender</code>, <code>person_education</code>,
+                <code>person_income</code>, <code>person_emp_exp</code>, <code>person_home_ownership</code>,
+                <code>loan_amnt</code>, <code>loan_intent</code>, <code>loan_int_rate</code>,
+                <code>loan_percent_income</code>, <code>cb_person_cred_hist_length</code>,
+                <code>credit_score</code>, <code>previous_loan_defaults_on_file</code>.
+                Первая строка - заголовки.
+            </div>
+
+            <div class="field-error" id="csvFile_error"></div>
         </div>
 
-        <button type="submit" class="predict-btn" id="uploadBtn">Загрузить модель</button>
+        <button type="submit" class="predict-btn" id="predictBtn">Загрузить и предсказать</button>
 
         <div id="errorNotification" class="error-notification"></div>
-        <div id="successNotification" class="success-notification">Модель успешно загружена</div>
+        <div id="successNotification" class="success-notification">Файл успешно обработан</div>
     </form>
+
+    <div id="resultContainer" class="result-block hidden">
+        <div class="result-card">
+            <div class="result-title">Результаты обработки</div>
+
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div id="rocAucValue" class="metric-value">-</div>
+                    <div class="metric-label">ROC-AUC</div>
+                </div>
+                <div class="metric-item">
+                    <div id="recordsCount" class="metric-value">-</div>
+                    <div class="metric-label">Записей</div>
+                </div>
+            </div>
+
+            <a id="downloadBtn" class="download-btn" download>Скачать результат</a>
+        </div>
+    </div>
 </div>
 
 <script>
     (function() {
-        const form = document.getElementById('uploadForm');
-        const modelFileInput = document.getElementById('modelFile');
+        const form = document.getElementById('csvForm');
+        const csvFileInput = document.getElementById('csvFile');
         const fileWrapper = document.getElementById('fileWrapper');
         const selectBtn = document.getElementById('selectBtn');
         const fileNameDisplay = document.getElementById('fileNameDisplay');
         const clearBtn = document.getElementById('clearBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
+
+        const resultContainer = document.getElementById('resultContainer');
+        const rocAucValueEl = document.getElementById('rocAucValue');
+        const recordsCountEl = document.getElementById('recordsCount');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const predictBtn = document.getElementById('predictBtn');
         const errorNotification = document.getElementById('errorNotification');
         const successNotification = document.getElementById('successNotification');
-        const fileErrorEl = document.getElementById('modelFile_error');
+        const fileErrorEl = document.getElementById('csvFile_error');
 
-        const API_URL = 'http://127.0.0.1:8000/upload-model';
+        const API_URL = 'http://127.0.0.1:8000/predict-from-csv';
 
-        modelFileInput.addEventListener('change', (e) => {
+        csvFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
                 fileNameDisplay.textContent = file.name;
@@ -279,7 +374,7 @@
 
         clearBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            modelFileInput.value = '';
+            csvFileInput.value = '';
             resetFileUI();
         });
 
@@ -310,7 +405,7 @@
         }
 
         function validateFile() {
-            const file = modelFileInput.files[0];
+            const file = csvFileInput.files[0];
             if (!file) {
                 fileErrorEl.textContent = 'Выберите файл';
                 fileErrorEl.classList.add('show');
@@ -318,8 +413,8 @@
                 return false;
             }
 
-            if (!file.name.endsWith('.pkl')) {
-                fileErrorEl.textContent = 'Загрузите файл с расширением .pkl';
+            if (!file.name.endsWith('.csv')) {
+                fileErrorEl.textContent = 'Загрузите файл с расширением .csv';
                 fileErrorEl.classList.add('show');
                 fileWrapper.classList.add('error');
                 return false;
@@ -335,6 +430,46 @@
             return true;
         }
 
+        async function countCsvRows(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    const lines = text.split('\n');
+                    const dataRows = lines.length > 1 ? lines.length - 1 : 0;
+                    resolve(dataRows);
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        async function validateCsvHeaders(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    const firstLine = text.split('\n')[0];
+                    const headers = firstLine.toLowerCase().split(',').map(h => h.trim().replace(/["']/g, ''));
+
+                    const requiredHeaders = [
+                        'person_age', 'person_gender', 'person_education', 'person_income',
+                        'person_emp_exp', 'person_home_ownership', 'loan_amnt', 'loan_intent',
+                        'loan_int_rate', 'loan_percent_income', 'cb_person_cred_hist_length',
+                        'credit_score', 'previous_loan_defaults_on_file'
+                    ];
+
+                    const missing = requiredHeaders.filter(h => !headers.includes(h));
+                    if (missing.length > 0) {
+                        reject(`Отсутствуют колонки: ${missing.join(', ')}`);
+                    } else {
+                        resolve();
+                    }
+                };
+                reader.onerror = () => reject('Не удалось прочитать файл');
+                reader.readAsText(file);
+            });
+        }
+
         async function handleSubmit(event) {
             event.preventDefault();
             hideNotifications();
@@ -344,12 +479,22 @@
                 return;
             }
 
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = 'Загрузка...';
+            const file = csvFileInput.files[0];
+
+            try {
+                await validateCsvHeaders(file);
+            } catch (headerError) {
+                showNotificationError(headerError);
+                return;
+            }
+
+            predictBtn.disabled = true;
+            predictBtn.textContent = 'Обработка...';
+            resultContainer.classList.add('hidden');
 
             try {
                 const formData = new FormData();
-                formData.append('file', modelFileInput.files[0]);
+                formData.append('file', file);
 
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -360,8 +505,12 @@
                     throw new Error('Не удалось подключиться к серверу. Проверьте, запущен ли бэкенд на порту 8000.');
                 }
 
+                if (response.status === 405) {
+                    throw new Error('Модель не загружена. Сначала загрузите model.pkl через /upload-model.');
+                }
+
                 if (response.status === 415) {
-                    throw new Error('Неподдерживаемый формат. Загрузите файл .pkl');
+                    throw new Error('Неподдерживаемый формат файла. Загрузите .csv файл.');
                 }
 
                 if (!response.ok) {
@@ -369,17 +518,57 @@
                     throw new Error(errorData.detail || `Ошибка сервера: ${response.status}`);
                 }
 
+                const rocAuc = response.headers.get('ROC-AUC');
+                const contentDisposition = response.headers.get('Content-Disposition');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                let filename = 'result.csv';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                    if (filenameMatch && filenameMatch[1]) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                downloadBtn.href = url;
+                downloadBtn.download = filename;
+
+                const rowCount = await countCsvRows(file);
+                recordsCountEl.textContent = rowCount;
+
+                if (rocAuc && rocAuc !== 'None') {
+                    rocAucValueEl.textContent = parseFloat(rocAuc).toFixed(4);
+                } else {
+                    rocAucValueEl.textContent = 'N/A';
+                }
+
+                resultContainer.classList.remove('hidden');
                 showNotificationSuccess();
 
             } catch (error) {
-                console.error('Upload error:', error);
-                showNotificationError(error.message || 'Не удалось загрузить модель.');
+                console.error('CSV prediction error:', error);
+
+                let message = 'Не удалось обработать файл.';
+                if (error.message.includes('405')) {
+                    message = 'Модель не загружена. Сначала загрузите model.pkl через /upload-model.';
+                } else if (error.message.includes('415')) {
+                    message = 'Неподдерживаемый формат файла. Загрузите .csv файл.';
+                } else if (error.message.includes('Не удалось подключиться')) {
+                    message = 'Не удалось подключиться к серверу. Проверьте, запущен ли бэкенд на порту 8000.';
+                } else if (error.message.includes('Отсутствуют колонки')) {
+                    message = error.message;
+                } else if (error.message) {
+                    message = 'Ошибка: ' + error.message;
+                }
+
+                showNotificationError(message);
             } finally {
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Загрузить модель';
+                predictBtn.disabled = false;
+                predictBtn.textContent = 'Загрузить и предсказать';
             }
         }
-
         form.addEventListener('submit', handleSubmit);
     })();
 </script>
