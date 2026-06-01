@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Ипотека: предсказание одобрения</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.4;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        :root {
+            --bg: #0f0f0f;
+            --surface: #1a1a1a;
+            --text: #e5e5e5;
+            --text-muted: #888;
+            --accent: #c46673;
+            --border: #2a2a2a;
+            --error: #c97a5c;
+            --success: #86c548;
+        }
+        .predictor-card {
+            background-color: var(--surface);
+            width: 100%;
+            max-width: 580px;
+            border: 1px solid var(--border);
+            padding: 28px 24px 32px 24px;
+        }
+        .title {
+            font-size: 1.6rem;
+            font-weight: 500;
+            margin-bottom: 24px;
+            letter-spacing: -0.2px;
+            color: var(--text);
+        }
+        .form-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .field-label {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+        .field-input,
+        .field-select {
+            width: 100%;
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+            font-size: 1rem;
+            font-family: inherit;
+            color: var(--text);
+            outline: none;
+            border-radius: 0px;
+        }
+        .field-input[type="number"] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        .field-input[type="number"]::-webkit-inner-spin-button,
+        .field-input[type="number"]::-webkit-outer-spin-button {
+            opacity: 0.5;
+            background: var(--border);
+        }
+        .field-input:focus,
+        .field-select:focus {
+            border-color: var(--accent);
+        }
+        .field-input.error {
+            border-color: var(--error);
+        }
+        .field-select {
+            cursor: pointer;
+            appearance: none;
+            background-color: var(--bg);
+        }
+        .field-error {
+            color: var(--error);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
+        }
+        .field-error.show {
+            display: block;
+        }
+        .predict-btn {
+            width: 100%;
+            background-color: var(--accent);
+            border: none;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+            border-radius: 0px;
+            letter-spacing: 0.3px;
+        }
+        .predict-btn:hover { background-color: #b54554; }
+        .predict-btn:active { background-color: #b54554; }
+        .predict-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .error-notification {
+            margin-top: 16px;
+            padding: 12px 14px;
+            background-color: rgba(201, 122, 92, 0.15);
+            border: 1px solid var(--error);
+            color: var(--error);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            border-radius: 0px;
+            display: none;
+        }
+        .error-notification.show { display: block; }
+        .result-block {
+            margin-top: 28px;
+            border-top: 1px solid var(--border);
+            padding-top: 22px;
+        }
+        .result-card {
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            padding: 18px 16px;
+        }
+        .result-status {
+            font-size: 1.3rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+        .result-probability {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 8px 0 16px 0;
+            text-align: center;
+        }
+        .probability-approved { color: var(--success); }
+        .probability-denied { color: var(--error); }
+        .result-message {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.4;
+            word-break: break-word;
+            text-align: center;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: var(--border);
+            margin: 12px 0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent);
+            transition: width 0.3s ease;
+        }
+        .hidden { display: none; }
+        @media (max-width: 500px) {
+            .predictor-card { padding: 20px 16px 26px; }
+            .title { font-size: 1.4rem; }
+        }
+        .nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.75rem;
+            padding: 6px 0;
+            transition: color 0.2s;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            margin-bottom: -2px;
+        }
+        .nav-link:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+<div class="predictor-card">
+    <h1 class="title">Предсказание одобрения ипотеки</h1>
+
+    <div class="nav">
+        <a href="index.html" class="nav-link active">📝 Одиночное предсказание</a>
+        <a href="predict-csv.html" class="nav-link">📁 CSV предсказание</a>
+        <a href="upload-model.html" class="nav-link">⚙️ Загрузка модели</a>
+    </div>
+
+    <form id="mortgageForm" class="form-grid" novalidate>
+        <div class="field-group">
+            <label class="field-label" for="person_age">Возраст (лет)</label>
+            <input type="number" id="person_age" name="person_age" class="field-input" min="18" max="100" step="1" placeholder="Например, 32" required>
+            <div class="field-error" id="person_age_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="person_gender">Пол</label>
+            <select id="person_gender" name="person_gender" class="field-select" required>
+                <option value="" disabled selected>Выберите вариант</option>
+                <option value="Male">Мужчина</option>
+                <option value="Female">Женщина</option>
+            </select>
+            <div class="field-error" id="person_gender_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="person_education">Образование</label>
+            <select id="person_education" name="person_education" class="field-select" required>
+                <option value="" disabled selected>Выберите вариант</option>
+                <option value="High School">Среднее общее</option>
+                <option value="Bachelor">Бакалавриат</option>
+                <option value="Master">Магистратура</option>
+                <option value="Doctorate">Аспирантура</option>
+            </select>
+            <div class="field-error" id="person_education_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="person_income">Ежегодный доход (₽)</label>
+            <input type="number" id="person_income" name="person_income" class="field-input" min="0" step="any" placeholder="Например, 850000" required>
+            <div class="field-error" id="person_income_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="person_emp_exp">Опыт работы (лет)</label>
+            <input type="number" id="person_emp_exp" name="person_emp_exp" class="field-input" min="0" max="60" step="0.5" placeholder="Например, 5" required>
+            <div class="field-error" id="person_emp_exp_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="person_home_ownership">Тип жилья</label>
+            <select id="person_home_ownership" name="person_home_ownership" class="field-select" required>
+                <option value="" disabled selected>Выберите вариант</option>
+                <option value="RENT">Аренда</option>
+                <option value="OWN">Собственное жилье</option>
+                <option value="MORTGAGE">Ипотека</option>
+                <option value="OTHER">Другое</option>
+            </select>
+            <div class="field-error" id="person_home_ownership_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="loan_amnt">Сумма кредита (₽)</label>
+            <input type="number" id="loan_amnt" name="loan_amnt" class="field-input" min="0" step="any" placeholder="Например, 4200000" required>
+            <div class="field-error" id="loan_amnt_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="loan_intent">Цель кредита</label>
+            <select id="loan_intent" name="loan_intent" class="field-select" required>
+                <option value="" disabled selected>Выберите вариант</option>
+                <option value="EDUCATION">Образование</option>
+                <option value="HOMEIMPROVEMENT">Ремонт или улучшение жилья</option>
+                <option value="MEDICAL">Медицина</option>
+                <option value="PERSONAL">Личные нужды</option>
+                <option value="VENTURE">Бизнес или стартап</option>
+            </select>
+            <div class="field-error" id="loan_intent_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="loan_int_rate">Процентная ставка (%)</label>
+            <input type="number" id="loan_int_rate" name="loan_int_rate" class="field-input" min="0" max="100" step="0.01" placeholder="Например, 12.5" required>
+            <div class="field-error" id="loan_int_rate_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="loan_percent_income">Доля дохода на кредит (%)</label>
+            <input type="number" id="loan_percent_income" name="loan_percent_income" class="field-input" min="0" max="100" step="0.1" placeholder="Например, 25.5" required>
+            <div class="field-error" id="loan_percent_income_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="cb_person_cred_hist_length">Длина кредитной истории (лет)</label>
+            <input type="number" id="cb_person_cred_hist_length" name="cb_person_cred_hist_length" class="field-input" min="0" max="100" step="0.1" placeholder="Например, 8.5" required>
+            <div class="field-error" id="cb_person_cred_hist_length_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="credit_score">Кредитный рейтинг</label>
+            <input type="number" id="credit_score" name="credit_score" class="field-input" min="300" max="850" step="1" placeholder="Например, 720" required>
+            <div class="field-error" id="credit_score_error"></div>
+        </div>
+
+        <div class="field-group">
+            <label class="field-label" for="previous_loan_defaults_on_file">Были ли дефолты ранее</label>
+            <select id="previous_loan_defaults_on_file" name="previous_loan_defaults_on_file" class="field-select" required>
+                <option value="" disabled selected>Выберите вариант</option>
+                <option value="Yes">Да</option>
+                <option value="No">Нет</option>
+            </select>
+            <div class="field-error" id="previous_loan_defaults_on_file_error"></div>
+        </div>
+
+        <button type="submit" class="predict-btn" id="predictBtn">Получить предсказание</button>
+
+        <div id="errorNotification" class="error-notification"></div>
+    </form>
+
+    <div id="resultContainer" class="result-block hidden">
+        <div class="result-card">
+            <div id="resultStatus" class="result-status"></div>
+            <div id="resultProbability" class="result-probability"></div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <div id="resultMessage" class="result-message"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const form = document.getElementById('mortgageForm');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultStatusEl = document.getElementById('resultStatus');
+        const resultProbabilityEl = document.getElementById('resultProbability');
+        const resultMessageEl = document.getElementById('resultMessage');
+        const progressFillEl = document.getElementById('progressFill');
+        const predictBtn = document.getElementById('predictBtn');
+        const errorNotification = document.getElementById('errorNotification');
+
+        const API_URL = 'http://127.0.0.1:8000/predict';
+        const APPROVAL_THRESHOLD = 0.5;
+
+        const validationRules = {
+            person_age: {
+                required: 'Введите возраст',
+                min: { value: 18, message: 'Возраст должен быть не менее 18 лет' },
+                max: { value: 100, message: 'Возраст должен быть не более 100 лет' }
+            },
+            person_gender: {
+                required: 'Выберите пол'
+            },
+            person_education: {
+                required: 'Выберите образование'
+            },
+            person_income: {
+                required: 'Введите доход',
+                min: { value: 0, message: 'Доход не может быть отрицательным' }
+            },
+            person_emp_exp: {
+                required: 'Введите опыт работы',
+                min: { value: 0, message: 'Опыт не может быть отрицательным' },
+                max: { value: 60, message: 'Опыт работы не может превышать 60 лет' }
+            },
+            person_home_ownership: {
+                required: 'Выберите тип жилья'
+            },
+            loan_amnt: {
+                required: 'Введите сумму кредита',
+                min: { value: 0, message: 'Сумма кредита не может быть отрицательной' }
+            },
+            loan_intent: {
+                required: 'Выберите цель кредита'
+            },
+            loan_int_rate: {
+                required: 'Введите процентную ставку',
+                min: { value: 0, message: 'Ставка не может быть отрицательной' },
+                max: { value: 100, message: 'Ставка не может превышать 100%' }
+            },
+            loan_percent_income: {
+                required: 'Введите долю дохода',
+                min: { value: 0, message: 'Значение не может быть отрицательным' },
+                max: { value: 100, message: 'Значение не может превышать 100%' }
+            },
+            cb_person_cred_hist_length: {
+                required: 'Введите длину кредитной истории',
+                min: { value: 0, message: 'Значение не может быть отрицательным' },
+                max: { value: 100, message: 'Значение не может превышать 100 лет' }
+            },
+            credit_score: {
+                required: 'Введите кредитный рейтинг',
+                min: { value: 300, message: 'Минимальный рейтинг — 300' },
+                max: { value: 850, message: 'Максимальный рейтинг — 850' }
+            },
+            previous_loan_defaults_on_file: {
+                required: 'Выберите вариант'
+            }
+        };
+
+        function validateField(fieldId) {
+            const el = document.getElementById(fieldId);
+            const errorEl = document.getElementById(fieldId + '_error');
+            const rules = validationRules[fieldId];
+            const value = el.value.trim();
+            let errorMessage = '';
+
+            if (rules.required && !value) {
+                errorMessage = rules.required;
+            } else if (rules.min && parseFloat(value) < rules.min.value) {
+                errorMessage = rules.min.message;
+            } else if (rules.max && parseFloat(value) > rules.max.value) {
+                errorMessage = rules.max.message;
+            }
+
+            if (errorMessage) {
+                el.classList.add('error');
+                errorEl.textContent = errorMessage;
+                errorEl.classList.add('show');
+                return false;
+            } else {
+                el.classList.remove('error');
+                errorEl.classList.remove('show');
+                return true;
+            }
+        }
+
+        function clearAllErrors() {
+            Object.keys(validationRules).forEach(fieldId => {
+                const el = document.getElementById(fieldId);
+                const errorEl = document.getElementById(fieldId + '_error');
+                el.classList.remove('error');
+                errorEl.classList.remove('show');
+            });
+        }
+
+        function collectFormData() {
+            const data = {};
+            const fields = [
+                'person_age', 'person_gender', 'person_education', 'person_income',
+                'person_emp_exp', 'person_home_ownership', 'loan_amnt', 'loan_intent',
+                'loan_int_rate', 'loan_percent_income', 'cb_person_cred_hist_length',
+                'credit_score', 'previous_loan_defaults_on_file'
+            ];
+
+            fields.forEach(fieldId => {
+                const el = document.getElementById(fieldId);
+                const value = el.value.trim();
+                data[fieldId] = (el.type === 'number' && value !== '')
+                    ? parseFloat(value)
+                    : value;
+            });
+            return data;
+        }
+
+        function showNotificationError(message) {
+            errorNotification.textContent = message;
+            errorNotification.classList.add('show');
+            setTimeout(() => errorNotification.classList.remove('show'), 5000);
+        }
+
+        function hideNotificationError() {
+            errorNotification.classList.remove('show');
+        }
+
+        async function sendPredictionRequest(payload) {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ info: payload })
+            });
+
+            if (!response.ok && response.type === 'opaque') {
+                throw new Error('Не удалось подключиться к серверу. Проверь, запущен ли бэкенд на порту 8000 и настроен ли CORS.');
+            }
+
+            if (response.status === 405) {
+                throw new Error('Модель не загружена. Сначала загрузите model.pkl через /upload-model.');
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || `Ошибка сервера: ${response.status}`);
+            }
+
+            return await response.json();
+        }
+
+        function formatProbability(prob) {
+            return (prob * 100).toFixed(1) + '%';
+        }
+
+        function showResult(probability) {
+            resultContainer.classList.remove('hidden');
+
+            const isApproved = probability >= APPROVAL_THRESHOLD;
+            const probabilityPercent = probability * 100;
+
+            resultStatusEl.textContent = isApproved ? 'Решение: ОДОБРЕНО' : 'Решение: ОТКАЗАНО';
+            resultStatusEl.style.color = isApproved ? 'var(--success)' : 'var(--error)';
+
+            resultProbabilityEl.textContent = formatProbability(probability);
+            resultProbabilityEl.className = 'result-probability ' + (isApproved ? 'probability-approved' : 'probability-denied');
+
+            progressFillEl.style.width = probabilityPercent + '%';
+            progressFillEl.style.backgroundColor = isApproved ? 'var(--success)' : 'var(--error)';
+
+            resultMessageEl.textContent = isApproved
+                ? 'Заявка соответствует критериям модели. Вероятность одобрения высокая.'
+                : 'Заявка не прошла проверку по критериям модели. Вероятность одобрения низкая.';
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            hideNotificationError();
+            clearAllErrors();
+
+            let isValid = true;
+            Object.keys(validationRules).forEach(fieldId => {
+                if (!validateField(fieldId)) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                showNotificationError('Исправьте ошибки в форме');
+                return;
+            }
+
+            predictBtn.disabled = true;
+            predictBtn.textContent = 'Обработка...';
+            resultContainer.classList.add('hidden');
+
+            try {
+                const formData = collectFormData();
+                const response = await sendPredictionRequest(formData);
+
+                const probability = typeof response.loan_status === 'number' ? response.loan_status : parseFloat(response.loan_status);
+
+                if (isNaN(probability) || probability < 0 || probability > 1) {
+                    throw new Error('Некорректный формат ответа от сервера.');
+                }
+
+                showResult(probability);
+
+            } catch (error) {
+                console.error('Prediction error:', error);
+                showNotificationError(error.message || 'Не удалось получить предсказание. Проверь соединение.');
+            } finally {
+                predictBtn.disabled = false;
+                predictBtn.textContent = 'Получить предсказание';
+            }
+        }
+
+        function resetResultOnInput() {
+            if (!resultContainer.classList.contains('hidden')) {
+                resultContainer.classList.add('hidden');
+            }
+            hideNotificationError();
+        }
+
+        Object.keys(validationRules).forEach(fieldId => {
+            const el = document.getElementById(fieldId);
+            el.addEventListener('blur', () => validateField(fieldId));
+            el.addEventListener('input', () => {
+                resetResultOnInput();
+                const errorEl = document.getElementById(fieldId + '_error');
+                if (errorEl.classList.contains('show')) {
+                    validateField(fieldId);
+                }
+            });
+            el.addEventListener('change', () => {
+                resetResultOnInput();
+                validateField(fieldId);
+            });
+        });
+
+        form.addEventListener('submit', handleSubmit);
+    })();
+</script>
+</body>
+</html>
