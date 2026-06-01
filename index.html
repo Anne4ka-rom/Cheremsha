@@ -177,11 +177,44 @@
             .predictor-card { padding: 20px 16px 26px; }
             .title { font-size: 1.4rem; }
         }
+        .nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.75rem;
+            padding: 6px 0;
+            transition: color 0.2s;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .nav-link.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+            margin-bottom: -2px;
+        }
+        .nav-link:hover {
+            color: var(--accent);
+        }
     </style>
 </head>
 <body>
 <div class="predictor-card">
     <h1 class="title">Предсказание одобрения ипотеки</h1>
+
+    <div class="nav">
+        <a href="index.html" class="nav-link active">📝 Одиночное предсказание</a>
+        <a href="predict-csv.html" class="nav-link">📁 CSV предсказание</a>
+        <a href="upload-model.html" class="nav-link">⚙️ Загрузка модели</a>
+    </div>
 
     <form id="mortgageForm" class="form-grid" novalidate>
         <div class="field-group">
@@ -290,7 +323,7 @@
         </div>
 
         <button type="submit" class="predict-btn" id="predictBtn">Получить предсказание</button>
-        
+
         <div id="errorNotification" class="error-notification"></div>
     </form>
 
@@ -420,12 +453,12 @@
                 'loan_int_rate', 'loan_percent_income', 'cb_person_cred_hist_length',
                 'credit_score', 'previous_loan_defaults_on_file'
             ];
-            
+
             fields.forEach(fieldId => {
                 const el = document.getElementById(fieldId);
                 const value = el.value.trim();
-                data[fieldId] = (el.type === 'number' && value !== '') 
-                    ? parseFloat(value) 
+                data[fieldId] = (el.type === 'number' && value !== '')
+                    ? parseFloat(value)
                     : value;
             });
             return data;
@@ -447,20 +480,20 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ info: payload })
             });
-            
+
             if (!response.ok && response.type === 'opaque') {
                 throw new Error('Не удалось подключиться к серверу. Проверь, запущен ли бэкенд на порту 8000 и настроен ли CORS.');
             }
-            
+
             if (response.status === 405) {
                 throw new Error('Модель не загружена. Сначала загрузите model.pkl через /upload-model.');
             }
-            
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.detail || `Ошибка сервера: ${response.status}`);
             }
-            
+
             return await response.json();
         }
 
@@ -470,21 +503,21 @@
 
         function showResult(probability) {
             resultContainer.classList.remove('hidden');
-            
+
             const isApproved = probability >= APPROVAL_THRESHOLD;
             const probabilityPercent = probability * 100;
-            
+
             resultStatusEl.textContent = isApproved ? 'Решение: ОДОБРЕНО' : 'Решение: ОТКАЗАНО';
             resultStatusEl.style.color = isApproved ? 'var(--success)' : 'var(--error)';
-            
+
             resultProbabilityEl.textContent = formatProbability(probability);
             resultProbabilityEl.className = 'result-probability ' + (isApproved ? 'probability-approved' : 'probability-denied');
-            
+
             progressFillEl.style.width = probabilityPercent + '%';
             progressFillEl.style.backgroundColor = isApproved ? 'var(--success)' : 'var(--error)';
-            
-            resultMessageEl.textContent = isApproved 
-                ? 'Заявка соответствует критериям модели. Вероятность одобрения высокая.' 
+
+            resultMessageEl.textContent = isApproved
+                ? 'Заявка соответствует критериям модели. Вероятность одобрения высокая.'
                 : 'Заявка не прошла проверку по критериям модели. Вероятность одобрения низкая.';
         }
 
@@ -492,7 +525,7 @@
             event.preventDefault();
             hideNotificationError();
             clearAllErrors();
-            
+
             let isValid = true;
             Object.keys(validationRules).forEach(fieldId => {
                 if (!validateField(fieldId)) {
@@ -504,23 +537,23 @@
                 showNotificationError('Исправьте ошибки в форме');
                 return;
             }
-            
+
             predictBtn.disabled = true;
             predictBtn.textContent = 'Обработка...';
             resultContainer.classList.add('hidden');
-            
+
             try {
                 const formData = collectFormData();
                 const response = await sendPredictionRequest(formData);
-                
+
                 const probability = typeof response.loan_status === 'number' ? response.loan_status : parseFloat(response.loan_status);
-                
+
                 if (isNaN(probability) || probability < 0 || probability > 1) {
                     throw new Error('Некорректный формат ответа от сервера.');
                 }
-                
+
                 showResult(probability);
-                
+
             } catch (error) {
                 console.error('Prediction error:', error);
                 showNotificationError(error.message || 'Не удалось получить предсказание. Проверь соединение.');
