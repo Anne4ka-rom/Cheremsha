@@ -35,7 +35,7 @@
 
 ```bash
 git clone https://github.com/Anne4ka-rom/Cheremsha.git
-cd Cheremsha
+cd Cheremsha/fastapi-app
 ```
 
 Установите необходимые зависимости:
