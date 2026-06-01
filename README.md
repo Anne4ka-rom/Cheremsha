@@ -10,7 +10,7 @@
 
 ## Ссылки на материалы
 
-- **Репозиторий SourceCraft** - [https://sourcecraft.dev/golubkoffnickita/cheremsha](Sourcecraft)
+- **Репозиторий SourceCraft** - [Sourcecraft](https://sourcecraft.dev/golubkoffnickita/cheremsha)
 - **Видеодемонстрация сервиса (защита проекта)** - ссылка будет добавлена после записи видео
 
 ---
