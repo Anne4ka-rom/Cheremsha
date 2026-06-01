@@ -1,9 +1,6 @@
-name: CI fastapi
+name: CI backend and frontend
 
-on:
-  push:
-    branches: ["main"]
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   backend-check:
@@ -12,7 +9,6 @@ jobs:
       run:
         working-directory: ./fastapi_app
     steps:
-      - name: Checkout repository
       - uses: actions/checkout@v4
 
       - name: Setup Python
@@ -31,3 +27,24 @@ jobs:
 
       - name: Run tests
         run: pytest tests/ -v
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./fastapi_app/templates
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./fastapi_app/templates/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ESLint
+        run: npm run lint
