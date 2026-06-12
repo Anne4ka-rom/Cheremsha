@@ -28,6 +28,38 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
+      - name: Create runner execution proof
+        run: |
+          cat << 'EOF' > runner_execution_proof.txt
+          ============================================================
+          EXECUTED BY GITHUB ACTIONS RUNNER
+          ============================================================
+          Run ID        : ${{ github.run_id }}
+          Run Attempt   : ${{ github.run_attempt }}
+          Job ID        : ${{ github.job }}
+          Workflow      : ${{ github.workflow }}
+          Repository    : ${{ github.repository }}
+          Commit SHA    : ${{ github.sha }}
+          Ref           : ${{ github.ref }}
+          Actor         : ${{ github.actor }}
+          Runner OS     : ${{ runner.os }}
+          Runner Arch   : ${{ runner.arch }}
+          Runner Name   : ${{ runner.name }}
+          Server URL    : ${{ github.server_url }}
+          Timestamp (UTC): $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          ============================================================
+          EOF
+          echo "Runner proof file created: runner_execution_proof.txt"
+          cat runner_execution_proof.txt
+
+      - name: Upload runner proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-runner-proof-${{ github.run_id }}
+          path: ./fastapi_app/runner_execution_proof.txt
+          retention-days: 30
+          if-no-files-found: error
+
   frontend-check:
     runs-on: ubuntu-latest
     defaults:
